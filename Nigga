@@ -1,0 +1,218 @@
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+
+local LocalPlayer = Players.LocalPlayer
+local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+local Humanoid = Character:WaitForChild("Humanoid")
+local RootPart = Character:WaitForChild("HumanoidRootPart")
+
+-- อัปเดต Character เมื่อตัวละครตายแล้วเกิดใหม่
+LocalPlayer.CharacterAdded:Connect(function(newChar)
+	Character = newChar
+	Humanoid = Character:WaitForChild("Humanoid")
+	RootPart = Character:WaitForChild("HumanoidRootPart")
+end)
+
+---------------------------------------------------------
+-- 1. สร้าง GUI
+---------------------------------------------------------
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "UtilityGui"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+
+-- ปุ่มเปิด/ปิด GUI (Toggle Button)
+local ToggleButton = Instance.new("TextButton")
+ToggleButton.Name = "ToggleButton"
+ToggleButton.Size = UDim2.new(0, 100, 0, 35)
+ToggleButton.Position = UDim2.new(0, 15, 0.5, -17)
+ToggleButton.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
+ToggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+ToggleButton.Text = "MENU [UI]"
+ToggleButton.Font = Enum.Font.SourceSansBold
+ToggleButton.TextSize = 16
+ToggleButton.Parent = ScreenGui
+
+local ToggleCorner = Instance.new("UICorner")
+ToggleCorner.CornerRadius = UDim.new(0, 8)
+ToggleCorner.Parent = ToggleButton
+
+-- กรอบหลัก (Main Frame)
+local MainFrame = Instance.new("Frame")
+MainFrame.Name = "MainFrame"
+MainFrame.Size = UDim2.new(0, 260, 0, 240)
+MainFrame.Position = UDim2.new(0.5, -130, 0.5, -120)
+MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
+MainFrame.Active = true
+MainFrame.Draggable = true -- สามารถลากเปลี่ยนตำแหน่งได้
+MainFrame.Parent = ScreenGui
+
+local MainCorner = Instance.new("UICorner")
+MainCorner.CornerRadius = UDim.new(0, 10)
+MainCorner.Parent = MainFrame
+
+-- หัวข้อ (Title)
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(1, -40, 0, 35)
+Title.Position = UDim2.new(0, 10, 0, 0)
+Title.BackgroundTransparency = 1
+Title.Text = "Control Panel"
+Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+Title.Font = Enum.Font.SourceSansBold
+Title.TextSize = 18
+Title.TextXAlignment = Enum.TextXAlignment.Left
+Title.Parent = MainFrame
+
+-- ปุ่มย่อ/ปิด GUI บนกรอบหลัก
+local CloseButton = Instance.new("TextButton")
+CloseButton.Size = UDim2.new(0, 25, 0, 25)
+CloseButton.Position = UDim2.new(1, -30, 0, 5)
+CloseButton.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+CloseButton.Text = "X"
+CloseButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+CloseButton.Font = Enum.Font.SourceSansBold
+CloseButton.TextSize = 14
+CloseButton.Parent = MainFrame
+
+local CloseCorner = Instance.new("UICorner")
+CloseCorner.CornerRadius = UDim.new(0, 6)
+CloseCorner.Parent = CloseButton
+
+---------------------------------------------------------
+-- 2. ส่วนของ TP Walk (วาร์ปเดินแบบเร่งความเร็ว)
+---------------------------------------------------------
+local TPWalkLabel = Instance.new("TextLabel")
+TPWalkLabel.Size = UDim2.new(1, -20, 0, 20)
+TPWalkLabel.Position = UDim2.new(0, 10, 0, 40)
+TPWalkLabel.BackgroundTransparency = 1
+TPWalkLabel.Text = "TP Walk Speed:"
+TPWalkLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+TPWalkLabel.Font = Enum.Font.SourceSans
+TPWalkLabel.TextSize = 14
+TPWalkLabel.TextXAlignment = Enum.TextXAlignment.Left
+TPWalkLabel.Parent = MainFrame
+
+-- ช่องใส่ตัวเลขความเร็ว
+local SpeedInput = Instance.new("TextBox")
+SpeedInput.Size = UDim2.new(1, -20, 0, 30)
+SpeedInput.Position = UDim2.new(0, 10, 0, 65)
+SpeedInput.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+SpeedInput.TextColor3 = Color3.fromRGB(255, 255, 255)
+SpeedInput.Text = "50" -- ความเร็วเริ่มต้น
+SpeedInput.PlaceholderText = "ใส่ตัวเลขความเร็ว..."
+SpeedInput.Font = Enum.Font.SourceSans
+SpeedInput.TextSize = 16
+SpeedInput.Parent = MainFrame
+
+local InputCorner = Instance.new("UICorner")
+InputCorner.CornerRadius = UDim.new(0, 6)
+InputCorner.Parent = SpeedInput
+
+-- ปุ่ม เปิด/ปิด TP Walk
+local TPWalkBtn = Instance.new("TextButton")
+TPWalkBtn.Size = UDim2.new(1, -20, 0, 35)
+TPWalkBtn.Position = UDim2.new(0, 10, 0, 105)
+TPWalkBtn.BackgroundColor3 = Color3.fromRGB(50, 150, 50)
+TPWalkBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+TPWalkBtn.Text = "TP Walk: OFF"
+TPWalkBtn.Font = Enum.Font.SourceSansBold
+TPWalkBtn.TextSize = 16
+TPWalkBtn.Parent = MainFrame
+
+local TPBtnCorner = Instance.new("UICorner")
+TPBtnCorner.CornerRadius = UDim.new(0, 6)
+TPBtnCorner.Parent = TPWalkBtn
+
+---------------------------------------------------------
+-- 3. ส่วนของ Freeze / Stop Time (หยุดเวลา)
+---------------------------------------------------------
+local FreezeBtn = Instance.new("TextButton")
+FreezeBtn.Size = UDim2.new(1, -20, 0, 35)
+FreezeBtn.Position = UDim2.new(0, 10, 0, 155)
+FreezeBtn.BackgroundColor3 = Color3.fromRGB(50, 100, 180)
+FreezeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+FreezeBtn.Text = "Stop Time: OFF"
+FreezeBtn.Font = Enum.Font.SourceSansBold
+FreezeBtn.TextSize = 16
+FreezeBtn.Parent = MainFrame
+
+local FreezeBtnCorner = Instance.new("UICorner")
+FreezeBtnCorner.CornerRadius = UDim.new(0, 6)
+FreezeBtnCorner.Parent = FreezeBtn
+
+
+---------------------------------------------------------
+-- SYSTEM LOGIC (ระบบการทำงาน)
+---------------------------------------------------------
+
+-- 1. ระบบ เปิด/ปิด UI
+local isGuiVisible = true
+local function toggleGui()
+	isGuiVisible = not isGuiVisible
+	MainFrame.Visible = isGuiVisible
+end
+
+CloseButton.MouseButton1Click:Connect(toggleGui)
+ToggleButton.MouseButton1Click:Connect(toggleGui)
+
+-- 2. ระบบ TP Walk
+local tpWalkEnabled = false
+local tpSpeed = 50
+
+-- อัปเดตค่าความเร็วเมื่อพิมพ์ในช่อง TextBox
+SpeedInput.FocusLost:Connect(function()
+	local num = tonumber(SpeedInput.Text)
+	if num then
+		tpSpeed = num
+	else
+		SpeedInput.Text = tostring(tpSpeed)
+	end
+end)
+
+-- Toggle ปุ่ม TP Walk
+TPWalkBtn.MouseButton1Click:Connect(function()
+	tpWalkEnabled = not tpWalkEnabled
+	if tpWalkEnabled then
+		TPWalkBtn.Text = "TP Walk: ON"
+		TPWalkBtn.BackgroundColor3 = Color3.fromRGB(200, 60, 60)
+	else
+		TPWalkBtn.Text = "TP Walk: OFF"
+		TPWalkBtn.BackgroundColor3 = Color3.fromRGB(50, 150, 50)
+	end
+end)
+
+-- คำนวณการเคลื่อนที่ TP Walk
+RunService.Heartbeat:Connect(function(delta)
+	if tpWalkEnabled and Character and Humanoid and RootPart then
+		if Humanoid.MoveDirection.Magnitude > 0 then
+			RootPart.CFrame = RootPart.CFrame + (Humanoid.MoveDirection * (tpSpeed * delta))
+		end
+	end
+end)
+
+-- 3. ระบบ Stop Time / Freeze ตัวละคร
+local timeFrozen = false
+
+FreezeBtn.MouseButton1Click:Connect(function()
+	timeFrozen = not timeFrozen
+	
+	if timeFrozen then
+		FreezeBtn.Text = "Stop Time: ON"
+		FreezeBtn.BackgroundColor3 = Color3.fromRGB(220, 120, 0)
+		
+		-- ล็อกตำแหน่งตัวละครไม่ให้ขยับ
+		if RootPart then
+			RootPart.Anchored = true
+		end
+	else
+		FreezeBtn.Text = "Stop Time: OFF"
+		FreezeBtn.BackgroundColor3 = Color3.fromRGB(50, 100, 180)
+		
+		-- ปลดล็อกตำแหน่ง
+		if RootPart then
+			RootPart.Anchored = false
+		end
+	end
+end)
